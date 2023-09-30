@@ -124,6 +124,7 @@
                     event.target.classList.toggle('bold');
                 }
             }
+            output.focus();
         });
 
         copyButton.addEventListener('click', function () {
@@ -140,8 +141,9 @@
             // Change the button text briefly to indicate success
             copyButton.innerText = 'Copied!';
             setTimeout(() => {
-                copyButton.innerText = 'Copy';
+                copyButton.innerText = 'Copy to Clipboard';
             }, 2000); // Reset button text after 2 seconds
+            output.focus();
         });
     </script>
 </body>
