@@ -97,6 +97,13 @@
     </div>
     <div id="right-panel">
         <h2>Music</h2>
+        <style>
+            textarea {
+                font-size: 30px;
+                padding-top: 10px;
+                padding-bottom: 10px;
+            }
+        </style>
         <textarea id="output"></textarea>
         <p style="color:red">Copy and save notes. This page does not save data.</p>
         <button id="copy-button">Copy to Clipboard</button>
@@ -104,6 +111,8 @@
     <script>
         const wordList = document.getElementById('swar-list');
         const output = document.getElementById('output');
+        const copyButton = document.getElementById('copy-button');
+
 
         wordList.addEventListener('click', function (event) {
             event.preventDefault();
@@ -115,6 +124,24 @@
                     event.target.classList.toggle('bold');
                 }
             }
+        });
+
+        copyButton.addEventListener('click', function () {
+            // Select the text in the text area
+            textArea.select();
+            textArea.setSelectionRange(0, 99999); // For mobile devices
+
+            // Copy the selected text to the clipboard
+            document.execCommand('copy');
+
+            // Deselect the text area
+            textArea.setSelectionRange(0, 0);
+
+            // Change the button text briefly to indicate success
+            copyButton.innerText = 'Copied!';
+            setTimeout(() => {
+                copyButton.innerText = 'Copy';
+            }, 2000); // Reset button text after 2 seconds
         });
     </script>
 </body>
