@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Two Vertical Panels</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            display: flex;
+            height: 100vh;
+        }
+
+        #left-panel {
+            width: 25%;
+            background-color: #f0f0f0;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        #right-panel {
+            width: 75%;
+            background-color: #ffffff;
+            padding: 10px;
+        }
+
+        #output {
+            width: 80%;
+            height: 300px;
+            resize: vertical;
+        }
+
+        .bold {
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div id="left-panel">
+        <h2>Swar List</h2>
+        <style>
+            ul {
+                font-size: 30px;
+                padding-top: 10px;
+                padding-bottom: 10px;
+            }
+        </style>
+        <ul id="swar-list">
+            <!-- You can generate a random list of words here using JavaScript -->
+            <!-- For simplicity, we'll use a static list of words -->
+            <li><a href="#">  (2 Spaces)</a></li>
+            <li><a href="#">    (4 Spaces)</a></li>
+            <li><b>>मध्य</b></li>
+            <li><a href="#">सा</a></li>
+            <li><a href="#">रे</a></li>
+            <li><a href="#">ग</a></li>
+            <li><a href="#">म</a></li>
+            <li><a href="#">प</a></li>
+            <li><a href="#">ध</a></li>
+            <li><a href="#">नी</a></li>
+            <li><a href="#">रे. (कोमल)</a></li>
+            <li><a href="#">ग. (कोमल)</a></li>
+            <li><a href="#">म. (तीव्र)</a></li>
+            <li><a href="#">ध. (कोमल)</a></li>
+            <li><a href="#">नी. (कोमल)</a></li>
+            <li><b>>मंद्र</b></li>
+            <li><a href="#">.सा</a></li>
+            <li><a href="#">.रे</a></li>
+            <li><a href="#">.ग</a></li>
+            <li><a href="#">.म</a></li>
+            <li><a href="#">.प</a></li>
+            <li><a href="#">.ध</a></li>
+            <li><a href="#">.नी</a></li>
+            <li><a href="#">.रे. (कोमल)</a></li>
+            <li><a href="#">.ग. (कोमल)</a></li>
+            <li><a href="#">.म. (तीव्र)</a></li>
+            <li><a href="#">.ध. (कोमल)</a></li>
+            <li><a href="#">.नी. (कोमल)</a></li>
+            <li><b>>तार</b></li>
+            <li><a href="#">सां</a></li>
+            <li><a href="#">रें</a></li>
+            <li><a href="#">गं</a></li>
+            <li><a href="#">मं</a></li>
+            <li><a href="#">पं</a></li>
+            <li><a href="#">धं</a></li>
+            <li><a href="#">नीं</a></li>
+            <li><a href="#">रें. (कोमल)</a></li>
+            <li><a href="#">गं. (कोमल)</a></li>
+            <li><a href="#">मं. (तीव्र)</a></li>
+            <li><a href="#">धं. (कोमल)</a></li>
+            <li><a href="#">नीं. (कोमल)</a></li>
+
+            <!-- Add more words here -->
+        </ul>
+    </div>
+    <div id="right-panel">
+        <h2>Music</h2>
+        <textarea id="output"></textarea>
+    </div>
+    <script>
+        const wordList = document.getElementById('swar-list');
+        const output = document.getElementById('output');
+
+        wordList.addEventListener('click', function (event) {
+            event.preventDefault();
+            if (event.target.parentElement.tagName === 'LI') {
+                const word = event.target.textContent.split(' (')[0];
+                if (!word.startsWith('>')) {
+                    output.value += word;
+                } else {
+                    event.target.classList.toggle('bold');
+                }
+            }
+        });
+    </script>
+</body>
+</html>
