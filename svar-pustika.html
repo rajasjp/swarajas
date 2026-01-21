@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Sargam Grid – Smart Notation Boxes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Noto+Sans+Devanagari:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0f172a;
+    --panel:#111827;
+    --ink:#e5e7eb;
+    --muted:#9ca3af;
+    --accent:#60a5fa;
+    --card:#0b1220;
+    --addon: clamp(96px, 12vw, 140px); /* fixed width for 17th column */
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;
+    background:radial-gradient(1200px 600px at 10% -10%, #0b1324 0%, #0a1020 35%, #080e1b 60%, #070a14 100%);
+    color:var(--ink);
+    font:16px/1.45 "Inter", system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans Devanagari", sans-serif;
+    padding:28px clamp(16px, 3vw, 32px);
+  }
+  h1{font-weight:600;letter-spacing:.3px;margin:0 0 10px;}
+  .sub{color:var(--muted);margin-bottom:22px;}
+  .toolbar{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin:18px 0 14px;}
+  button{
+    appearance:none;border:0;cursor:pointer;
+    padding:10px 14px;border-radius:14px;
+    background:linear-gradient(180deg,#1a2337,#101725);
+    color:var(--ink);font-weight:600;letter-spacing:.2px;
+    box-shadow:0 0 0 1px #21304d, 0 10px 24px rgba(0,0,0,.35);
+    transition:transform .06s ease, box-shadow .2s ease, background .2s ease;
+  }
+  button:hover{transform:translateY(-1px);box-shadow:0 0 0 1px #2a3d63, 0 16px 32px rgba(0,0,0,.45);}
+  button:active{transform:translateY(0) scale(.99);}
+  .copy{background:linear-gradient(180deg,#1f2d4a,#152138);}
+  .paste{background:linear-gradient(180deg,#1d3a2d,#142a20);}
+  .legend{margin-top:14px;color:var(--muted);font-size:13px;}
+
+  .sheet{
+    border-radius:18px;padding:18px;
+    background:linear-gradient(180deg, #0b1220 0%, #0a0f1a 100%);
+    box-shadow:inset 0 0 0 1px #1a2640, 0 20px 50px rgba(0,0,0,.45);
+  }
+
+  .row{
+    display:grid;
+    grid-template-columns: repeat(16, minmax(70px, 1fr)) var(--addon); /* aligned 17th col */
+    gap:8px; align-items:center; margin:10px 0;
+  }
+
+  .cell-number{
+    background:linear-gradient(180deg, #111b2e, #0d1626);
+    color:#cbd5e1;border-radius:12px;text-align:center;padding:10px 0;
+    font-weight:600;box-shadow:inset 0 0 0 1px #223150;
+  }
+
+.note-box {
+  width:100%;
+  padding:11px 12px;
+  border-radius:12px;
+  border:0;
+  outline:none;
+  background:linear-gradient(180deg, #0d1728, #0a1322);
+  color:#e5e7eb;
+  font-family:"Noto Sans Devanagari","Inter",system-ui,sans-serif;
+  font-size:22.4px; /* increased 40% */
+  box-shadow:inset 0 0 0 1px #1f2b46;
+  transition: box-shadow .15s ease, background .15s ease;
+}
+
+  .note-box::placeholder{color:#64748b;}
+  .note-box:focus{background:linear-gradient(180deg, #0f1b2f, #0b1628);box-shadow:inset 0 0 0 2px var(--accent);}
+  .add-row{white-space:nowrap;font-size:14px;padding:9px 12px;background:linear-gradient(180deg,#183048,#12243a);color:#c7d2fe;width:100%;}
+  .footer{margin-top:20px;color:var(--muted);font-size:13px;}
+  .badge{color:#9dd8ff}
+  .sep{opacity:.35;padding:0 8px}
+  .stub{width:100%;height:100%;}
+
+  /* Modal for manual paste fallback */
+  .modal-backdrop{
+    position:fixed; inset:0; display:none;
+    background:rgba(0,0,0,.55); backdrop-filter: blur(2px);
+    align-items:center; justify-content:center; z-index:40;
+  }
+  .modal{
+    width:min(900px, 92vw);
+    background:linear-gradient(180deg,#0e1a2b,#0b1423);
+    border-radius:16px; padding:16px; box-shadow:0 25px 80px rgba(0,0,0,.6);
+    box-sizing:border-box;
+  }
+  .modal h3{margin:0 0 8px; font-weight:600}
+  .modal p{margin:0 0 10px; color:#a0aec0; font-size:13px}
+  .modal textarea{
+    width:100%; height:220px; resize:vertical;
+    border-radius:12px; border:0; outline:none;
+    padding:12px; font:14px/1.4 "Inter", ui-monospace, SFMono-Regular, Menlo, monospace;
+    background:#0a1322; color:#e5e7eb; box-shadow:inset 0 0 0 1px #203050;
+  }
+  .modal .actions{display:flex; gap:10px; margin-top:12px; justify-content:flex-end;}
+  .danger{background:linear-gradient(180deg,#3a1d1d,#2a1414);}
+</style>
+</head>
+<body>
+
+  <h1>Sargam Grid</h1>
+  <div class="sub">Type <span class="badge">s r g m p d n</span> (uppercase for <em>komal/tīvr</em> where applicable) and keep pressing the same key to cycle <strong>madhya → taar → mandra</strong>. Space inserts a gap; Tab moves to the next cell. Press <kbd>e</kbd>/<kbd>E</kbd> to add an English <strong>S</strong> (extension).</div>
+
+  <div class="toolbar">
+    <button class="copy" id="copyAll">Copy all rows</button>
+    <button class="paste" id="pasteBtn">Paste</button>
+    <span class="legend">Copy uses <em>tabs</em> between cells and a <em>newline</em> between rows. Paste expects the same.</span>
+  </div>
+
+  <div class="sheet" id="sheet">
+    <div class="row" id="numbersRow" aria-hidden="true"></div>
+
+    <div class="row input-row">
+      <!-- inputs injected by JS -->
+      <button class="add-row" type="button">➕ Add row</button>
+    </div>
+  </div>
+
+  <div class="footer">
+    Tips:
+    <span class="sep">•</span> Uppercase <strong>R G D N</strong> → <em>komal</em>.
+    <span class="sep">•</span> Uppercase <strong>M</strong> → <em>tīvr</em>.
+    <span class="sep">•</span> <strong>S</strong> &amp; <strong>P</strong> have no variants (case ignored).
+  </div>
+
+  <!-- Manual paste modal -->
+  <div class="modal-backdrop" id="pasteModal">
+    <div class="modal">
+      <h3>Paste rows</h3>
+      <p>Paste data copied from this tool (or a compatible sheet): 16 tab-separated cells per row, rows separated by newlines.</p>
+      <textarea id="pasteArea" placeholder="Cell1[TAB]Cell2[TAB]...Cell16&#10;..."></textarea>
+      <div class="actions">
+        <button id="cancelPaste" class="danger">Cancel</button>
+        <button id="applyPaste">Apply Paste</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+(function(){
+  const SHEET   = document.getElementById('sheet');
+  const NUMBERS = document.getElementById('numbersRow');
+  const COPYBTN = document.getElementById('copyAll');
+  const PASTE   = document.getElementById('pasteBtn');
+
+  const MODAL   = document.getElementById('pasteModal');
+  const TA      = document.getElementById('pasteArea');
+  const APPLY   = document.getElementById('applyPaste');
+  const CANCEL  = document.getElementById('cancelPaste');
+
+  // Build numbers row
+  function buildNumbersRow(){
+    NUMBERS.innerHTML = '';
+    for(let i=1;i<=16;i++){
+      const div = document.createElement('div');
+      div.className = 'cell-number';
+      div.textContent = i;
+      NUMBERS.appendChild(div);
+    }
+    const stub = document.createElement('div');
+    stub.className = 'stub';
+    NUMBERS.appendChild(stub);
+  }
+  buildNumbersRow();
+
+  // Create input row
+  function createInputRow(){
+    const row = document.createElement('div');
+    row.className = 'row input-row';
+    for(let i=0;i<16;i++){
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'note-box';
+      input.placeholder = '…';
+      attachSmartHandlers(input);
+      row.appendChild(input);
+    }
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'add-row';
+    btn.textContent = '➕ Add row';
+    btn.addEventListener('click', () => {
+      const newRow = createInputRow();
+      SHEET.appendChild(newRow);
+      newRow.querySelector('input.note-box')?.focus();
+    });
+    row.appendChild(btn);
+    return row;
+  }
+
+  // Initialize first input row
+  (() => {
+    const first = SHEET.querySelector('.row.input-row');
+    first.innerHTML = '';
+    for(let i=0;i<16;i++){
+      const input = document.createElement('input');
+      input.type='text';
+      input.className='note-box';
+      input.placeholder='…';
+      attachSmartHandlers(input);
+      first.appendChild(input);
+    }
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'add-row';
+    btn.textContent = '➕ Add row';
+    btn.addEventListener('click', () => {
+      SHEET.appendChild(createInputRow());
+    });
+    first.appendChild(btn);
+  })();
+
+  // --- Notation logic ---
+  const SHUDDH = { s:'सा', r:'रे', g:'ग', m:'म', p:'प', d:'ध', n:'नी' };
+  const KOMAL_MARK='॰', TEEVR_MARK='॑', TAAR_MARK='ं', MANDRA_DOT='.';
+  function getVariantsForKey(key){
+    const k = key;
+    if (k.toLowerCase()==='s'){ const b=SHUDDH.s; return [b, addTaar(b), addMandra(b)]; }
+    if (k.toLowerCase()==='p'){ const b=SHUDDH.p; return [b, addTaar(b), addMandra(b)]; }
+    const lower = k.toLowerCase();
+    if (!SHUDDH[lower]) return null;
+    let base = SHUDDH[lower];
+    if (k!==lower){
+      if (lower==='m') base += TEEVR_MARK;
+      else if (['r','g','d','n'].includes(lower)) base += KOMAL_MARK;
+    }
+    return [ base, addTaar(base), addMandra(base) ];
+  }
+  function addMandra(base){ return MANDRA_DOT + base; }
+  function addTaar(base){
+    if (base.endsWith(KOMAL_MARK)) return base.slice(0,-1)+TAAR_MARK+KOMAL_MARK;
+    if (base.endsWith(TEEVR_MARK)) return base.slice(0,-1)+TAAR_MARK+TEEVR_MARK;
+    return base + TAAR_MARK;
+  }
+
+  // Build a validator set of all legal tokens (every variant we can generate + 'S')
+  const VALID_TOKENS = (() => {
+    const set = new Set(['S']); // sustain marker
+    const keys = ['s','p','r','g','m','d','n',
+                  'S','P','R','G','M','D','N'];
+    for(const k of keys){
+      const v = getVariantsForKey(k);
+      if (v) v.forEach(tok => set.add(tok));
+    }
+    return set;
+  })();
+
+  function applyNoteToInput(input, key){
+    const variants = getVariantsForKey(key); if (!variants) return;
+    const text = input.value;
+    const cursorPos = input.selectionStart;
+    
+    // If empty, just add the first variant
+    if (!text.trim()){ 
+      input.value = variants[0]; 
+      input.setSelectionRange(variants[0].length, variants[0].length);
+      return; 
+    }
+    
+    // Check if cursor is at the end and if we're after a space or at end of text
+    const textBeforeCursor = text.substring(0, cursorPos);
+    const textAfterCursor = text.substring(cursorPos);
+    const trimmedBefore = textBeforeCursor.trim();
+    
+    // If cursor is not at the end, move to end first
+    if (cursorPos !== text.length) {
+      input.value = text.trim() + ' ' + variants[0];
+      input.setSelectionRange(input.value.length, input.value.length);
+      return;
+    }
+    
+    // Check if we're after a space (cursor at end and last char is space)
+    const endsWithSpace = textBeforeCursor.endsWith(' ');
+    
+    // If after a space or text ends with space, add new note
+    if (endsWithSpace || !trimmedBefore) {
+      // Normalize spaces: ensure only one space before adding
+      const normalized = text.trim() + ' ' + variants[0];
+      input.value = normalized;
+      input.setSelectionRange(normalized.length, normalized.length);
+      return;
+    }
+    
+    // Otherwise, check if last token matches this variant - if so, cycle it
+    const tokens = trimmedBefore.split(/\s+/);
+    const last = tokens[tokens.length-1];
+    const idx = variants.indexOf(last);
+    
+    if (idx > -1) {
+      // Last token matches - cycle it
+      tokens[tokens.length-1] = variants[(idx+1)%variants.length];
+      input.value = tokens.join(' ');
+      input.setSelectionRange(input.value.length, input.value.length);
+    } else {
+      // Last token doesn't match - add new note
+      const normalized = text.trim() + ' ' + variants[0];
+      input.value = normalized;
+      input.setSelectionRange(normalized.length, normalized.length);
+    }
+  }
+  function applyExtensionS(input){
+    const t=input.value; input.value = t ? (/\s$/.test(t)? t+'S': t+' S') : 'S';
+  }
+
+  // Check if text contains Devanagari characters
+  function containsDevanagari(text){
+    // Devanagari Unicode range: U+0900 to U+097F
+    return /[\u0900-\u097F]/.test(text);
+  }
+
+  // Validate paste content contains Devanagari notes
+  function isValidNoteContent(text){
+    if (!text || !text.trim()) return false;
+    // Must contain Devanagari characters
+    if (!containsDevanagari(text)) return false;
+    // If multiple tokens, should have spaces (check that spaces exist between Devanagari sequences)
+    const trimmed = text.trim();
+    // Allow content that has Devanagari characters - be lenient to allow pasting from this tool
+    // Check that it's not just random text (should have Devanagari)
+    return trimmed.length > 0 && containsDevanagari(trimmed);
+  }
+
+  function attachSmartHandlers(el){
+    // Handle space key - add single space and move cursor to end
+    el.addEventListener('keydown',(ev)=>{
+      const k=ev.key;
+      const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+      const isModifier = ev.metaKey || ev.ctrlKey;
+      
+      // Allow copy/paste shortcuts
+      if (isModifier && (k === 'c' || k === 'C' || k === 'v' || k === 'V' || k === 'x' || k === 'X')) {
+        return; // Let browser handle copy/paste/cut
+      }
+      
+      const allowed=['Backspace','Delete','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End','Escape'];
+      if (allowed.includes(k)) return;
+      
+      // Handle space - ensure only one space after last note
+      if (k===' '){
+        ev.preventDefault();
+        const text = el.value;
+        const cursorPos = el.selectionStart;
+        const textBeforeCursor = text.substring(0, cursorPos);
+        const trimmedBefore = textBeforeCursor.trim();
+        
+        // If there's content and cursor is not at end, move to end
+        if (trimmedBefore && cursorPos !== text.length) {
+          el.value = trimmedBefore + ' ';
+          el.setSelectionRange(el.value.length, el.value.length);
+          return;
+        }
+        
+        // If already ends with space, don't add another
+        if (textBeforeCursor.endsWith(' ')) {
+          el.setSelectionRange(el.value.length, el.value.length);
+          return;
+        }
+        
+        // Add single space at end
+        el.value = trimmedBefore + ' ';
+        el.setSelectionRange(el.value.length, el.value.length);
+        return;
+      }
+      
+      if (k==='Tab') return;
+      
+      if (k==='e' || k==='E'){ 
+        ev.preventDefault(); 
+        applyExtensionS(el); 
+        setTimeout(()=>el.setSelectionRange(el.value.length,el.value.length),0); 
+        return; 
+      }
+      
+      if (/^[a-zA-Z]$/.test(k)){
+        const low=k.toLowerCase();
+        if ('srgmpdn'.includes(low)){
+          ev.preventDefault();
+          if (el.selectionStart!==el.value.length || el.selectionEnd!==el.value.length){
+            el.setSelectionRange(el.value.length, el.value.length);
+          }
+          applyNoteToInput(el,k);
+          setTimeout(()=>el.setSelectionRange(el.value.length,el.value.length),0);
+          return;
+        }
+      }
+      ev.preventDefault();
+    });
+    
+    // Handle copy (Cmd/Ctrl+C)
+    el.addEventListener('copy', (ev)=>{
+      // Check if there's selected text in the input
+      const start = el.selectionStart;
+      const end = el.selectionEnd;
+      let text = '';
+      
+      if (start !== end && start < end) {
+        // There's selected text - copy that
+        text = el.value.substring(start, end);
+      } else {
+        // No selection - copy entire cell value
+        text = el.value;
+      }
+      
+      if (text && text.trim()) {
+        if (ev.clipboardData) {
+          ev.clipboardData.setData('text/plain', text);
+          ev.preventDefault();
+        } else {
+          // Fallback: use async clipboard API
+          navigator.clipboard.writeText(text).catch(() => {});
+        }
+      }
+    });
+    
+    // Handle paste (Cmd/Ctrl+V)
+    el.addEventListener('paste', (ev)=>{
+      ev.preventDefault();
+      let pasteText = '';
+      
+      // Get paste data from clipboard event
+      if (ev.clipboardData && ev.clipboardData.getData) {
+        pasteText = ev.clipboardData.getData('text/plain');
+      }
+      
+      // Process paste synchronously if we have data
+      if (pasteText) {
+        if (isValidNoteContent(pasteText)) {
+          // Normalize spaces (collapse multiple spaces to single)
+          const normalized = pasteText.trim().split(/\s+/).join(' ');
+          el.value = normalized;
+          el.setSelectionRange(normalized.length, normalized.length);
+        } else {
+          // Invalid content - show alert
+          alert('Pasted content must contain valid Devanagari notes. Only notes copied from this tool can be pasted.');
+        }
+      } else {
+        // Fallback: try async clipboard API
+        navigator.clipboard.readText().then(text => {
+          if (isValidNoteContent(text)) {
+            const normalized = text.trim().split(/\s+/).join(' ');
+            el.value = normalized;
+            el.setSelectionRange(normalized.length, normalized.length);
+          } else if (text) {
+            alert('Pasted content must contain valid Devanagari notes. Only notes copied from this tool can be pasted.');
+          }
+        }).catch(() => {
+          // Clipboard API failed, ignore
+        });
+      }
+    });
+  }
+
+  // Copy all rows to clipboard (tabs between cells, newline between rows)
+  document.getElementById('copyAll').addEventListener('click', async ()=>{
+    const rows=[...SHEET.querySelectorAll('.row.input-row')];
+    const lines=rows.map(row=>{
+      const cells=[...row.querySelectorAll('input.note-box')];
+      return cells.map(c=>c.value.trim()).join('\t');
+    });
+    const text=lines.join('\n');
+    try{ await navigator.clipboard.writeText(text); flashButton(COPYBTN,'Copied!'); }
+    catch(_){ fallbackCopy(text); flashButton(COPYBTN,'Copied!'); }
+  });
+
+  // Paste orchestration
+  PASTE.addEventListener('click', async ()=>{
+    // 1) Try direct clipboard read
+    try{
+      const txt = await navigator.clipboard.readText();
+      if (txt && txt.trim().length){
+        handlePaste(txt);
+        flashButton(PASTE,'Pasted!');
+        return;
+      }
+      // else fall through to modal
+    }catch(_){}
+    // 2) Fallback modal
+    TA.value = '';
+    MODAL.style.display = 'flex';
+    TA.focus();
+  });
+  CANCEL.addEventListener('click', ()=> MODAL.style.display='none');
+  APPLY.addEventListener('click', ()=>{
+    const txt = TA.value;
+    try{
+      handlePaste(txt);
+      MODAL.style.display='none';
+      flashButton(PASTE,'Pasted!');
+    }catch(err){
+      alert(err.message || String(err));
+    }
+  });
+
+  // Parse & apply pasted text
+  function handlePaste(text){
+    const parsed = parseClipboard(text);
+    // Ensure enough rows exist
+    const need = parsed.length;
+    ensureRowCount(need);
+    // Apply into top rows
+    const rows=[...SHEET.querySelectorAll('.row.input-row')];
+    parsed.forEach((arr,rowIdx)=>{
+      const inputs=[...rows[rowIdx].querySelectorAll('input.note-box')];
+      for(let c=0;c<16;c++){
+        inputs[c].value = arr[c]; // already trimmed in parser
+      }
+    });
+  }
+
+  function ensureRowCount(n){
+    const current = SHEET.querySelectorAll('.row.input-row').length;
+    for(let i=current;i<n;i++){
+      SHEET.appendChild(createInputRow());
+    }
+  }
+
+  // Parse clipboard data: newline-separated rows, each row has 16 tab-separated cells
+  function parseClipboard(text){
+    const rows = text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n');
+    // Drop trailing empty lines
+    while(rows.length && rows[rows.length-1].trim()==='') rows.pop();
+    if (!rows.length) throw new Error('Nothing to paste.');
+
+    return rows.map((line, rIndex)=>{
+      const cells = line.split('\t');
+      if (cells.length !== 16){
+        throw new Error(`Row ${rIndex+1} has ${cells.length} cells; expected 16 (tab-separated).`);
+      }
+      // Validate each cell's tokens
+      const cleaned = cells.map((cell, cIndex)=>{
+        const val = (cell||'').trim();
+        if (!val) return ''; // empty cell is fine
+        const tokens = val.split(/\s+/);
+        for (const t of tokens){
+          if (!VALID_TOKENS.has(t)){
+            throw new Error(`Invalid token at row ${rIndex+1}, col ${cIndex+1}: “${t}”.`);
+          }
+        }
+        return tokens.join(' ');
+      });
+      return cleaned;
+    });
+  }
+
+  // Helpers
+  function flashButton(btn,msg){
+    const prev=btn.textContent; btn.textContent='✅ '+msg; btn.disabled=true;
+    setTimeout(()=>{ btn.textContent=prev; btn.disabled=false; },1100);
+  }
+  function fallbackCopy(text){
+    const ta=document.createElement('textarea'); ta.value=text; document.body.appendChild(ta);
+    ta.select(); document.execCommand('copy'); ta.remove();
+  }
+})();
+</script>
+</body>
+</html>
